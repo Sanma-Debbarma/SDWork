@@ -1,6 +1,7 @@
 # Frontend
 Frontend/node_modules/
 Frontend/dist/
+Frontend/tsconfig.tsbuildinfo
 
 # Backend
 Backend/venv/
