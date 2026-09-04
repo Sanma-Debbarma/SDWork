@@ -130,27 +130,77 @@ export function App() {
   };
 
   // Toggle Bookmark Handler
-  const handleToggleBookmark = (id: string) => {
-    const updater = (prevList: Project[]) =>
-      prevList.map((p) => {
-        if (p.id === id) {
-          return { ...p, isBookmarked: !p.isBookmarked };
-        }
-        return p;
-      });
+  const handleToggleBookmark = async (id: string) => {
+    const project = [...featuredList, ...allProjectList].find(
+      (p) => p.id === id
+    );
 
-    setFeaturedList(updater);
-    setAllProjectList(updater);
+    if (!project) return;
 
-    if (selectedProjectModal && selectedProjectModal.id === id) {
+    const oldStatus = project.isBookmarked;
+    const newStatus = !oldStatus;
+
+    // ⚡ Change UI immediately
+    setFeaturedList((prev) =>
+      prev.map((p) =>
+        p.id === id
+          ? { ...p, isBookmarked: newStatus }
+          : p
+      )
+    );
+
+    setAllProjectList((prev) =>
+      prev.map((p) =>
+        p.id === id
+          ? { ...p, isBookmarked: newStatus }
+          : p
+      )
+    );
+
+    // Update modal immediately
+    if (selectedProjectModal?.id === id) {
       setSelectedProjectModal({
         ...selectedProjectModal,
-        isBookmarked: !selectedProjectModal.isBookmarked,
+        isBookmarked: newStatus,
       });
     }
+
+    // 💾 Save to MongoDB in background
+    try {
+      const response = await fetch(
+        `http://127.0.0.1:5000/api/content/${id}/bookmark`,
+        {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error('Bookmark update failed');
+      }
+    } catch (error) {
+      console.error('Bookmark API error:', error);
+
+      // Rollback if backend fails
+      setFeaturedList((prev) =>
+        prev.map((p) =>
+          p.id === id
+            ? { ...p, isBookmarked: oldStatus }
+            : p
+        )
+      );
+
+      setAllProjectList((prev) =>
+        prev.map((p) =>
+          p.id === id
+            ? { ...p, isBookmarked: oldStatus }
+            : p
+        )
+      );
+    }
   };
-
-
   // Add newly created project (by client)
   const handleAddProject = (newProject: Project) => {
     setAllProjectList((prev) => [newProject, ...prev]);
