@@ -2,21 +2,13 @@ from flask import Flask, send_from_directory
 from flask_cors import CORS
 import os
 from routes.create import create_bp
-from models import db
+
 
 
 app = Flask(__name__)
 CORS(app)
 
-
-app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///edit.db"
-app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
-
-db.init_app(app)
 app.register_blueprint(create_bp)
-
-with app.app_context():
-    db.create_all()
 
 
 FRONTEND_FOLDER = os.path.abspath(

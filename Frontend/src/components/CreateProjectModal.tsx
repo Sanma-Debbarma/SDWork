@@ -22,8 +22,10 @@ export const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
 
   if (!isOpen) return null;
 
-  const handleSubmit = (e: React.FormEvent) => {
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
     if (!title.trim()) return;
 
     const newProject: Project = {
@@ -46,23 +48,64 @@ export const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
         theme === 'purple'
           ? '/assets/featured-1-web.png'
           : theme === 'peach'
-          ? '/assets/featured-2-mobile.png'
-          : theme === 'mint'
-          ? '/assets/featured-3-ecommerce.png'
-          : theme === 'blue'
-          ? '/assets/featured-4-brand.png'
-          : '/assets/featured-5-seo.png',
+            ? '/assets/featured-2-mobile.png'
+            : theme === 'mint'
+              ? '/assets/featured-3-ecommerce.png'
+              : theme === 'blue'
+                ? '/assets/featured-4-brand.png'
+                : '/assets/featured-5-seo.png',
       theme,
-      topIconType: theme === 'purple' ? 'star' : theme === 'peach' ? 'sphere' : theme === 'mint' ? 'cube' : theme === 'blue' ? 'ribbon' : 'shield',
+      topIconType:
+        theme === 'purple'
+          ? 'star'
+          : theme === 'peach'
+            ? 'sphere'
+            : theme === 'mint'
+              ? 'cube'
+              : theme === 'blue'
+                ? 'ribbon'
+                : 'shield',
       experienceLevel: 'Intermediate',
-      description: description || 'Exciting new project created directly via Editor Studio dashboard.',
+      description:
+        description ||
+        'Exciting new project created directly via Editor Studio dashboard.',
     };
 
+    // SEND TO MONGODB
+    const response = await fetch("http://127.0.0.1:5000/api/content", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        title: newProject.title,
+        category: newProject.category,
+        budgetMin: newProject.budgetMin,
+        budgetMax: newProject.budgetMax,
+        theme: newProject.theme,
+        description: newProject.description,
+        user_id: 1,
+      }),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      console.error("Failed to create project:", data);
+      return;
+    }
+
+    console.log("Saved to MongoDB:", data);
+
+    // Existing frontend behavior
     onAddProject(newProject);
+
     setTitle('');
     setDescription('');
     onClose();
   };
+
+
 
   const categories: CategoryType[] = [
     'Web Development',
@@ -149,9 +192,8 @@ export const CreateProjectModal: React.FC<CreateProjectModalProps> = ({
                     key={t.id}
                     type="button"
                     onClick={() => setTheme(t.id)}
-                    className={`w-7 h-7 rounded-full ${t.color} flex items-center justify-center border-2 transition-all ${
-                      theme === t.id ? 'border-gray-900 scale-110' : 'border-transparent'
-                    }`}
+                    className={`w-7 h-7 rounded-full ${t.color} flex items-center justify-center border-2 transition-all ${theme === t.id ? 'border-gray-900 scale-110' : 'border-transparent'
+                      }`}
                   >
                     {theme === t.id && <Check className="w-3.5 h-3.5 text-gray-900" />}
                   </button>

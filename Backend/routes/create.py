@@ -1,74 +1,51 @@
 from flask import Blueprint, request, jsonify
-from models import db
-from models.content import Content
+from database import content_collection
 
 create_bp = Blueprint("create", __name__)
 
 
+# CREATE PROJECT
 @create_bp.route("/api/content", methods=["POST"])
 def create_content():
-
     data = request.get_json()
 
     if not data:
-        return jsonify({
-            "error": "Request body is required"
-        }), 400
+        return jsonify({"error": "Request body is required"}), 400
 
-    title = data.get("title")
-    description = data.get("description")
-    category = data.get("category")
-    budget = data.get("budget")
-    user_id = data.get("user_id")
+    content = {
+        "user_id": data.get("user_id"),
+        "title": data.get("title"),
+        "category": data.get("category"),
+        "budgetMin": data.get("budgetMin"),
+        "budgetMax": data.get("budgetMax"),
+        "description": data.get("description"),
+        "status": "open"
+    }
 
-    if not title:
-        return jsonify({
-            "error": "Title is required"
-        }), 400
+    if not content["title"]:
+        return jsonify({"error": "Title is required"}), 400
 
-    if not description:
-        return jsonify({
-            "error": "Description is required"
-        }), 400
+    result = content_collection.insert_one(content)
 
-    if not category:
-        return jsonify({
-            "error": "Category is required"
-        }), 400
-
-    if budget is None:
-        return jsonify({
-            "error": "Budget is required"
-        }), 400
-
-    if user_id is None:
-        return jsonify({
-            "error": "User ID is required"
-        }), 400
-
-    content = Content(
-        user_id=user_id,
-        title=title,
-        description=description,
-        category=category,
-        budget=budget
-    )
-
-    db.session.add(content)
-    db.session.commit()
+    # Convert MongoDB ObjectId to string
+    saved_content = {
+        **content,
+        "_id": str(result.inserted_id)
+    }
 
     return jsonify({
-        "message": "Content created successfully",
-        "content": content.to_dict()
+        "message": "Project created successfully",
+        "id": str(result.inserted_id),
+        "project": saved_content
     }), 201
 
 
-# GET ALL CONTENT
+# GET ALL PROJECTS
 @create_bp.route("/api/content", methods=["GET"])
 def get_content():
-    contents = Content.query.all()
+    contents = list(content_collection.find())
 
-    return jsonify([
-        content.to_dict()
-        for content in contents
-    ]), 200
+    for content in contents:
+        content["id"] = str(content.pop("_id"))
+
+    return jsonify(contents), 200

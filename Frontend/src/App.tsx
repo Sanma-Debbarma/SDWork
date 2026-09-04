@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
 import { Header } from './components/Header';
 import { Sidebar } from './components/Sidebar';
@@ -15,7 +15,7 @@ import { EarningsView } from './components/views/EarningsView';
 import { SettingsView } from './components/views/SettingsView';
 import { MessagesView } from './components/views/MessagesView';
 import { LogoutModal } from './components/views/LogoutModal';
-import { FEATURED_PROJECTS, ALL_PROJECTS } from './data/projects';
+import { FEATURED_PROJECTS } from './data/projects';
 import {
   CategoryType,
   BudgetFilter,
@@ -49,7 +49,50 @@ export function App() {
   }, [location.pathname]);
 
   const [featuredList, setFeaturedList] = useState<Project[]>(FEATURED_PROJECTS);
-  const [allProjectList, setAllProjectList] = useState<Project[]>(ALL_PROJECTS);
+  const [allProjectList, setAllProjectList] = useState<Project[]>([]);
+
+  useEffect(() => {
+    const fetchProjects = async () => {
+      try {
+        const response = await fetch('http://127.0.0.1:5000/api/content');
+
+        if (!response.ok) {
+          throw new Error('Failed to fetch projects');
+        }
+
+        const data = await response.json();
+
+        const projects: Project[] = data.map((item: any) => ({
+          id: item.id,
+          title: item.title,
+          category: item.category,
+          creator: {
+            name: 'Ani Vex',
+            avatar: '/assets/anivex-avatar.png',
+            verified: true,
+          },
+          budget: `$${item.budgetMin.toLocaleString()} - $${item.budgetMax.toLocaleString()}`,
+          budgetMin: item.budgetMin,
+          budgetMax: item.budgetMax,
+          timeAgo: 'Recently',
+          likes: 0,
+          isLiked: false,
+          isBookmarked: false,
+          image: '/assets/featured-1-web.png',
+          theme: 'purple',
+          topIconType: 'star',
+          experienceLevel: 'Intermediate',
+          description: item.description || '',
+        }));
+
+        setAllProjectList(projects);
+      } catch (error) {
+        console.error('Failed to load projects:', error);
+      }
+    };
+
+    fetchProjects();
+  }, []);
 
   const [selectedProjectModal, setSelectedProjectModal] = useState<Project | null>(null);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
