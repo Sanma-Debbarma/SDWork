@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
 import { Header } from './components/Header';
 import { Sidebar } from './components/Sidebar';
 import { CategoryNav } from './components/CategoryNav';
@@ -12,6 +13,7 @@ import { MyProjectsView } from './components/views/MyProjectsView';
 import { SavedProjectsView } from './components/views/SavedProjectsView';
 import { EarningsView } from './components/views/EarningsView';
 import { SettingsView } from './components/views/SettingsView';
+import { MessagesView } from './components/views/MessagesView';
 import { LogoutModal } from './components/views/LogoutModal';
 import { FEATURED_PROJECTS, ALL_PROJECTS } from './data/projects';
 import {
@@ -23,14 +25,28 @@ import {
 } from './types';
 
 export function App() {
+  const navigate = useNavigate();
+  const location = useLocation();
+
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [activeSidebarItem, setActiveSidebarItem] = useState('dashboard');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<CategoryType>('All Categories');
   const [budgetFilter, setBudgetFilter] = useState<BudgetFilter>('all');
   const [experienceFilter, setExperienceFilter] = useState<ExperienceFilter>('all');
   const [sortOption, setSortOption] = useState<SortOption>('newest');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+
+  const activeSidebarItem = useMemo(() => {
+    const path = location.pathname;
+    if (path === '/') return 'dashboard';
+    if (path.startsWith('/content')) return 'content';
+    if (path.startsWith('/projects')) return 'my-projects';
+    if (path.startsWith('/saved')) return 'saved';
+    if (path.startsWith('/earn')) return 'earn';
+    if (path.startsWith('/settings')) return 'settings';
+    if (path.startsWith('/messages')) return 'messages';
+    return '';
+  }, [location.pathname]);
 
   const [featuredList, setFeaturedList] = useState<Project[]>(FEATURED_PROJECTS);
   const [allProjectList, setAllProjectList] = useState<Project[]>(ALL_PROJECTS);
@@ -184,8 +200,8 @@ export function App() {
         searchQuery={searchQuery}
         onSearchChange={(q) => {
           setSearchQuery(q);
-          if (q && activeSidebarItem !== 'dashboard') {
-            setActiveSidebarItem('dashboard');
+          if (q && location.pathname !== '/') {
+            navigate('/');
           }
         }}
         onOpenCreateModal={() => setIsCreateModalOpen(true)}
@@ -199,7 +215,17 @@ export function App() {
           isOpen={sidebarOpen}
           onClose={() => setSidebarOpen(false)}
           activeItem={activeSidebarItem}
-          onSelectItem={setActiveSidebarItem}
+          onSelectItem={(item) => {
+            const routes: Record<string, string> = {
+              dashboard: '/',
+              content: '/content',
+              'my-projects': '/projects',
+              saved: '/saved',
+              earn: '/earn',
+              settings: '/settings',
+            };
+            if (routes[item]) navigate(routes[item]);
+          }}
           savedCount={savedProjects.length}
           onLogoutClick={() => setIsLogoutModalOpen(true)}
         />
@@ -207,77 +233,97 @@ export function App() {
         {/* Content Body Container */}
         <main className="flex-1 lg:pl-[196px] transition-all duration-200 w-full min-w-0">
           <div className="p-4 sm:p-6 lg:p-7 max-w-[1720px] mx-auto">
-            {/* View 1: Main Dashboard Feed */}
-            {activeSidebarItem === 'dashboard' && (
-              <>
-                {/* Horizontal Category Navigation Bar */}
-                <CategoryNav
-                  selectedCategory={selectedCategory}
-                  onSelectCategory={setSelectedCategory}
-                />
+            <Routes>
+              {/* Route 1: Main Dashboard Feed */}
+              <Route
+                path="/"
+                element={
+                  <>
+                    {/* Horizontal Category Navigation Bar */}
+                    <CategoryNav
+                      selectedCategory={selectedCategory}
+                      onSelectCategory={setSelectedCategory}
+                    />
 
-                {/* Featured Projects Section */}
-                {filteredFeatured.length > 0 && (
-                  <FeaturedSection
-                    projects={filteredFeatured}
+                    {/* Featured Projects Section */}
+                    {filteredFeatured.length > 0 && (
+                      <FeaturedSection
+                        projects={filteredFeatured}
+                        onToggleLike={handleToggleLike}
+                        onToggleBookmark={handleToggleBookmark}
+                        onSelectProject={setSelectedProjectModal}
+                        onViewAll={() => setSelectedCategory('All Categories')}
+                      />
+                    )}
+
+                    {/* All Projects Section */}
+                    <AllProjects
+                      projects={filteredAllProjects}
+                      viewMode={viewMode}
+                      onViewModeChange={setViewMode}
+                      selectedCategory={selectedCategory}
+                      onCategoryChange={setSelectedCategory}
+                      budgetFilter={budgetFilter}
+                      onBudgetFilterChange={setBudgetFilter}
+                      experienceFilter={experienceFilter}
+                      onExperienceFilterChange={setExperienceFilter}
+                      sortOption={sortOption}
+                      onSortOptionChange={setSortOption}
+                      onToggleLike={handleToggleLike}
+                      onToggleBookmark={handleToggleBookmark}
+                      onSelectProject={setSelectedProjectModal}
+                      onResetFilters={handleResetFilters}
+                    />
+                  </>
+                }
+              />
+
+              {/* Route 2: Content (Client can create/post a service/project) */}
+              <Route
+                path="/content"
+                element={
+                  <ContentView
+                    onOpenCreateModal={() => setIsCreateModalOpen(true)}
+                    projects={allProjectList}
+                    onSelectProject={setSelectedProjectModal}
+                  />
+                }
+              />
+
+              {/* Route 3: My Projects (Freelancer/Editor can see working projects) */}
+              <Route
+                path="/projects"
+                element={
+                  <MyProjectsView onSelectProject={setSelectedProjectModal} />
+                }
+              />
+
+              {/* Route 4: Saved (Save interesting projects/services) */}
+              <Route
+                path="/saved"
+                element={
+                  <SavedProjectsView
+                    savedProjects={savedProjects}
                     onToggleLike={handleToggleLike}
                     onToggleBookmark={handleToggleBookmark}
                     onSelectProject={setSelectedProjectModal}
-                    onViewAll={() => setSelectedCategory('All Categories')}
+                    onBrowseProjects={() => navigate('/')}
                   />
-                )}
-
-                {/* All Projects Section */}
-                <AllProjects
-                  projects={filteredAllProjects}
-                  viewMode={viewMode}
-                  onViewModeChange={setViewMode}
-                  selectedCategory={selectedCategory}
-                  onCategoryChange={setSelectedCategory}
-                  budgetFilter={budgetFilter}
-                  onBudgetFilterChange={setBudgetFilter}
-                  experienceFilter={experienceFilter}
-                  onExperienceFilterChange={setExperienceFilter}
-                  sortOption={sortOption}
-                  onSortOptionChange={setSortOption}
-                  onToggleLike={handleToggleLike}
-                  onToggleBookmark={handleToggleBookmark}
-                  onSelectProject={setSelectedProjectModal}
-                  onResetFilters={handleResetFilters}
-                />
-              </>
-            )}
-
-            {/* View 2: Content (Client can create/post a service/project) */}
-            {activeSidebarItem === 'content' && (
-              <ContentView
-                onOpenCreateModal={() => setIsCreateModalOpen(true)}
-                projects={allProjectList}
-                onSelectProject={setSelectedProjectModal}
+                }
               />
-            )}
 
-            {/* View 3: My Projects (Freelancer/Editor can see working projects) */}
-            {activeSidebarItem === 'my-projects' && (
-              <MyProjectsView onSelectProject={setSelectedProjectModal} />
-            )}
+              {/* Route 5: Earn (Freelancer earnings) */}
+              <Route path="/earn" element={<EarningsView />} />
 
-            {/* View 4: Saved (Save interesting projects/services) */}
-            {activeSidebarItem === 'saved' && (
-              <SavedProjectsView
-                savedProjects={savedProjects}
-                onToggleLike={handleToggleLike}
-                onToggleBookmark={handleToggleBookmark}
-                onSelectProject={setSelectedProjectModal}
-                onBrowseProjects={() => setActiveSidebarItem('dashboard')}
-              />
-            )}
+              {/* Route 6: Settings */}
+              <Route path="/settings" element={<SettingsView />} />
 
-            {/* View 5: Earn (Freelancer earnings) */}
-            {activeSidebarItem === 'earn' && <EarningsView />}
+              {/* Route 7: Messages */}
+              <Route path="/messages" element={<MessagesView />} />
 
-            {/* View 6: Settings */}
-            {activeSidebarItem === 'settings' && <SettingsView />}
+              {/* Fallback */}
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Routes>
           </div>
         </main>
       </div>
@@ -307,7 +353,7 @@ export function App() {
         onConfirmLogout={() => {
           setIsLogoutModalOpen(false);
           alert('You have logged out of Ani Vex channel.');
-          setActiveSidebarItem('dashboard');
+          navigate('/');
         }}
       />
     </div>

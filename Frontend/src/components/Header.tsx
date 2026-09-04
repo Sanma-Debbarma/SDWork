@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import { Menu, Search, HelpCircle, Bell, Plus, Sparkles, X } from 'lucide-react';
 
 interface HeaderProps {
@@ -28,9 +29,9 @@ export const Header: React.FC<HeaderProps> = ({
           <Menu className="w-5 h-5" />
         </button>
 
-        <div className="flex items-center gap-2 cursor-pointer">
+        <Link to="/" className="flex items-center gap-2 cursor-pointer group">
           {/* Red Play Logo */}
-          <div className="w-[30px] h-[21px] bg-[#FF0000] rounded-[6px] flex items-center justify-center shadow-sm">
+          <div className="w-[30px] h-[21px] bg-[#FF0000] rounded-[6px] flex items-center justify-center shadow-sm group-hover:scale-105 transition-transform">
             <svg
               className="w-3.5 h-3.5 text-white ml-0.5 fill-current"
               viewBox="0 0 24 24"
@@ -42,7 +43,7 @@ export const Header: React.FC<HeaderProps> = ({
           <span className="text-[19px] font-bold text-[#0F0F0F] tracking-tight font-sans">
             Editor
           </span>
-        </div>
+        </Link>
       </div>
 
       {/* Center section: Large Rounded Search Bar */}
@@ -109,9 +110,10 @@ export const Header: React.FC<HeaderProps> = ({
         </button>
 
         {/* Profile Avatar */}
-        <div
+        <Link
+          to="/settings"
           className="w-8 h-8 rounded-full overflow-hidden border border-purple-400/50 cursor-pointer ml-1 hover:ring-2 hover:ring-purple-400 transition-all flex-shrink-0 bg-[#0F081D]"
-          title="Ani Vex Channel"
+          title="Ani Vex Channel - Settings"
         >
           <img
             src="/assets/anivex-avatar.png"
@@ -122,7 +124,7 @@ export const Header: React.FC<HeaderProps> = ({
                 'https://images.unsplash.com/photo-1578632767115-351597cf2477?w=100&auto=format&fit=crop&q=80';
             }}
           />
-        </div>
+        </Link>
       </div>
     </header>
   );

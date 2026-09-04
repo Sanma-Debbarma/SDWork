@@ -1,4 +1,5 @@
 import React from 'react';
+import { NavLink, Link } from 'react-router-dom';
 import {
   LayoutDashboard,
   FolderPlus,
@@ -13,8 +14,8 @@ import {
 interface SidebarProps {
   isOpen: boolean;
   onClose: () => void;
-  activeItem: string;
-  onSelectItem: (item: string) => void;
+  activeItem?: string;
+  onSelectItem?: (item: string) => void;
   savedCount?: number;
   onLogoutClick: () => void;
 }
@@ -22,7 +23,7 @@ interface SidebarProps {
 export const Sidebar: React.FC<SidebarProps> = ({
   isOpen,
   onClose,
-  activeItem,
+  activeItem: _activeItem,
   onSelectItem,
   savedCount = 0,
   onLogoutClick,
@@ -30,12 +31,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const navItems = [
     {
       id: 'dashboard',
+      to: '/',
       label: 'Dashboard',
       icon: LayoutDashboard,
       tooltip: 'Main overview & project feed',
     },
     {
       id: 'content',
+      to: '/content',
       label: 'Content',
       icon: FolderPlus,
       badge: 'Client',
@@ -44,6 +47,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     },
     {
       id: 'my-projects',
+      to: '/projects',
       label: 'My Projects',
       icon: Briefcase,
       badge: '2 Active',
@@ -52,6 +56,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     },
     {
       id: 'saved',
+      to: '/saved',
       label: 'Saved',
       icon: Bookmark,
       count: savedCount,
@@ -59,6 +64,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     },
     {
       id: 'earn',
+      to: '/earn',
       label: 'Earn',
       icon: DollarSign,
       tooltip: 'Freelancer earnings & payouts',
@@ -94,8 +100,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </div>
 
           {/* Profile / Channel Area */}
-          <div
-            onClick={() => onSelectItem('settings')}
+          <Link
+            to="/settings"
+            onClick={() => {
+              if (onSelectItem) onSelectItem('settings');
+              if (window.innerWidth < 1024) onClose();
+            }}
             className="flex flex-col items-center mb-6 px-4 text-center cursor-pointer group"
           >
             <div className="w-[84px] h-[84px] rounded-full overflow-hidden border-[2.5px] border-purple-500/60 p-0.5 shadow-lg bg-[#0F081D] group-hover:border-purple-400 group-hover:shadow-purple-500/30 transition-all flex items-center justify-center">
@@ -115,50 +125,57 @@ export const Sidebar: React.FC<SidebarProps> = ({
             <h2 className="text-[13px] font-bold text-[#0F0F0F] tracking-tight group-hover:text-purple-700 transition">
               Ani Vex
             </h2>
-          </div>
+          </Link>
 
           {/* Main Navigation Menu */}
           <nav className="px-2 space-y-1">
             {navItems.map((item) => {
               const Icon = item.icon;
-              const isActive = activeItem === item.id;
               return (
-                <button
+                <NavLink
                   key={item.id}
+                  to={item.to}
+                  end={item.to === '/'}
                   onClick={() => {
-                    onSelectItem(item.id);
+                    if (onSelectItem) onSelectItem(item.id);
                     if (window.innerWidth < 1024) onClose();
                   }}
                   title={item.tooltip}
-                  className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-[12.5px] font-medium transition-colors ${
-                    isActive
-                      ? 'bg-[#F2F2F2] text-[#0F0F0F] font-semibold'
-                      : 'text-[#606060] hover:bg-[#F9F9F9] hover:text-[#0F0F0F]'
-                  }`}
+                  className={({ isActive }) =>
+                    `w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-[12.5px] font-medium transition-colors ${
+                      isActive
+                        ? 'bg-[#F2F2F2] text-[#0F0F0F] font-semibold'
+                        : 'text-[#606060] hover:bg-[#F9F9F9] hover:text-[#0F0F0F]'
+                    }`
+                  }
                 >
-                  <div className="flex items-center gap-3.5 min-w-0">
-                    <Icon
-                      className={`w-[18px] h-[18px] flex-shrink-0 ${
-                        isActive
-                          ? 'text-[#0F0F0F]'
-                          : 'text-[#606060]'
-                      }`}
-                    />
-                    <span className="truncate">{item.label}</span>
-                  </div>
+                  {({ isActive }) => (
+                    <>
+                      <div className="flex items-center gap-3.5 min-w-0">
+                        <Icon
+                          className={`w-[18px] h-[18px] flex-shrink-0 ${
+                            isActive
+                              ? 'text-[#0F0F0F]'
+                              : 'text-[#606060]'
+                          }`}
+                        />
+                        <span className="truncate">{item.label}</span>
+                      </div>
 
-                  {/* Badge or Counter */}
-                  {item.count !== undefined && item.count > 0 && (
-                    <span className="px-1.5 py-0.5 text-[10px] font-bold bg-purple-100 text-purple-700 rounded-full">
-                      {item.count}
-                    </span>
+                      {/* Badge or Counter */}
+                      {item.count !== undefined && item.count > 0 && (
+                        <span className="px-1.5 py-0.5 text-[10px] font-bold bg-purple-100 text-purple-700 rounded-full">
+                          {item.count}
+                        </span>
+                      )}
+                      {item.badge && !isActive && (
+                        <span className={`px-1.5 py-0.5 text-[9.5px] font-semibold rounded-md ${item.badgeColor}`}>
+                          {item.badge}
+                        </span>
+                      )}
+                    </>
                   )}
-                  {item.badge && !isActive && (
-                    <span className={`px-1.5 py-0.5 text-[9.5px] font-semibold rounded-md ${item.badgeColor}`}>
-                      {item.badge}
-                    </span>
-                  )}
-                </button>
+                </NavLink>
               );
             })}
           </nav>
@@ -167,20 +184,31 @@ export const Sidebar: React.FC<SidebarProps> = ({
         {/* Bottom Pinned Items: Settings & Logout */}
         <div className="p-2 border-t border-[#F0F0F0] space-y-1">
           {/* Settings */}
-          <button
+          <NavLink
+            to="/settings"
             onClick={() => {
-              onSelectItem('settings');
+              if (onSelectItem) onSelectItem('settings');
               if (window.innerWidth < 1024) onClose();
             }}
-            className={`w-full flex items-center gap-3.5 px-3.5 py-2.5 rounded-xl text-[12.5px] font-medium transition-colors ${
-              activeItem === 'settings'
-                ? 'bg-[#F2F2F2] text-[#0F0F0F] font-semibold'
-                : 'text-[#606060] hover:bg-[#F9F9F9] hover:text-[#0F0F0F]'
-            }`}
+            className={({ isActive }) =>
+              `w-full flex items-center gap-3.5 px-3.5 py-2.5 rounded-xl text-[12.5px] font-medium transition-colors ${
+                isActive
+                  ? 'bg-[#F2F2F2] text-[#0F0F0F] font-semibold'
+                  : 'text-[#606060] hover:bg-[#F9F9F9] hover:text-[#0F0F0F]'
+              }`
+            }
           >
-            <Settings className="w-[18px] h-[18px] flex-shrink-0 text-[#606060]" />
-            <span className="truncate">Settings</span>
-          </button>
+            {({ isActive }) => (
+              <>
+                <Settings
+                  className={`w-[18px] h-[18px] flex-shrink-0 ${
+                    isActive ? 'text-[#0F0F0F]' : 'text-[#606060]'
+                  }`}
+                />
+                <span className="truncate">Settings</span>
+              </>
+            )}
+          </NavLink>
 
           {/* Logout */}
           <button
@@ -198,3 +226,4 @@ export const Sidebar: React.FC<SidebarProps> = ({
     </>
   );
 };
+
