@@ -77,12 +77,14 @@ export function App() {
           timeAgo: 'Recently',
           likes: 0,
           isLiked: false,
-          isBookmarked: false,
+          isBookmarked: item.isBookmarked ?? false,
           image: '/assets/featured-1-web.png',
           theme: 'purple',
           topIconType: 'star',
           experienceLevel: 'Intermediate',
           description: item.description || '',
+          status: item.status || 'open',        // NEW
+          proposals: item.proposals_count ?? 0, // NEW
         }));
 
         setAllProjectList(projects);
@@ -147,6 +149,7 @@ export function App() {
       });
     }
   };
+
 
   // Add newly created project (by client)
   const handleAddProject = (newProject: Project) => {
