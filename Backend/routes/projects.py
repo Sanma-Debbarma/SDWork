@@ -1,16 +1,175 @@
 from flask import Blueprint, request, jsonify
-from database import content_collection
+from database import content_collection, projects_collection
+from models.project import ProjectModel
+from models.user import User
 from bson import ObjectId
 import os
+from datetime import datetime
+import jwt
 
 projects_bp = Blueprint("projects", __name__)
+
+JWT_SECRET = os.getenv("JWT_SECRET_KEY", "editcom-super-secret-jwt-key-2026")
 
 UPLOAD_FOLDER = os.path.join(
     os.path.dirname(os.path.dirname(__file__)),
     "uploads"
 )
-
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+
+
+def get_current_user_from_token():
+    auth_header = request.headers.get("Authorization", "")
+    if auth_header.startswith("Bearer "):
+        token = auth_header.split(" ", 1)[1].strip()
+        try:
+            payload = jwt.decode(token, JWT_SECRET, algorithms=["HS256"])
+            user_id = payload.get("user_id")
+            return User.find_by_id(user_id)
+        except Exception:
+            return None
+    return None
+
+
+# ==========================================
+# 1. GET ALL PROJECTS (Editor browse / Public)
+# ==========================================
+@projects_bp.route("/api/projects", methods=["GET"])
+def get_all_projects():
+    try:
+        category = request.args.get("category")
+        query = {}
+        if category and category != "All Categories":
+            query["category"] = category
+
+        projects = ProjectModel.find_all(query)
+        return jsonify(projects), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+# ==========================================
+# 2. GET SINGLE PROJECT
+# ==========================================
+@projects_bp.route("/api/projects/<project_id>", methods=["GET"])
+def get_single_project(project_id):
+    project = ProjectModel.find_by_id(project_id)
+    if not project:
+        return jsonify({"error": "Project not found"}), 404
+    return jsonify(project), 200
+
+
+# ==========================================
+# 3. CREATE PROJECT (Creator only)
+# ==========================================
+@projects_bp.route("/api/projects", methods=["POST"])
+def create_project():
+    data = request.get_json(silent=True) or {}
+    user = get_current_user_from_token()
+
+    # If authenticated, enforce role restriction
+    if user:
+        if user.get("role") == "editor":
+            return jsonify({
+                "error": "Editors are not permitted to create projects. Only Creators can create projects."
+            }), 403
+        creator_id = str(user["_id"])
+        creator_name = user.get("name") or user.get("email", "").split("@")[0].capitalize()
+        creator_avatar = user.get("avatar") or "/assets/anivex-avatar.png"
+    else:
+        # Fallback if unauthenticated in dev
+        creator_id = str(data.get("creator_id") or data.get("user_id") or "creator-demo")
+        creator_name = data.get("creator_name", "Creator")
+        creator_avatar = data.get("creator_avatar", "/assets/anivex-avatar.png")
+
+    title = data.get("title", "").strip()
+    if not title:
+        return jsonify({"error": "Project title is required"}), 400
+
+    category = data.get("category", "Web Development")
+    description = data.get("description", "").strip()
+    budget = data.get("budget", "")
+    budget_min = data.get("budgetMin", 0)
+    budget_max = data.get("budgetMax", 0)
+    deadline = data.get("deadline", "Flexible")
+    files = data.get("files", [])
+    theme = data.get("theme", "purple")
+
+    project_payload = {
+        "creator_id": creator_id,
+        "creator_name": creator_name,
+        "creator_avatar": creator_avatar,
+        "title": title,
+        "category": category,
+        "description": description,
+        "budget": budget,
+        "budgetMin": budget_min,
+        "budgetMax": budget_max,
+        "deadline": deadline,
+        "files": files,
+        "theme": theme,
+    }
+
+    try:
+        created_project = ProjectModel.create(project_payload)
+        return jsonify({
+            "message": "Project published successfully",
+            "project": created_project,
+            "id": created_project["id"],
+        }), 201
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+# ==========================================
+# 4. TOGGLE BOOKMARK ON PROJECT
+# ==========================================
+@projects_bp.route("/api/projects/<project_id>/bookmark", methods=["PUT"])
+def toggle_project_bookmark(project_id):
+    try:
+        doc = projects_collection.find_one({"_id": ObjectId(project_id)})
+        if not doc:
+            return jsonify({"error": "Project not found"}), 404
+
+        new_status = not doc.get("isBookmarked", False)
+        projects_collection.update_one(
+            {"_id": ObjectId(project_id)},
+            {"$set": {"isBookmarked": new_status}}
+        )
+        return jsonify({
+            "message": "Bookmark updated",
+            "isBookmarked": new_status
+        }), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 400
+
+
+# ==========================================
+# 5. UPLOAD ATTACHMENT FOR PROJECT BRIEF
+# ==========================================
+@projects_bp.route("/api/projects/upload-attachment", methods=["POST"])
+def upload_attachment():
+    try:
+        file = request.files.get("file")
+        if not file or not file.filename:
+            return jsonify({"error": "File is required"}), 400
+
+        # Safe unique filename
+        filename = f"{int(datetime.utcnow().timestamp())}_{file.filename}"
+        file_path = os.path.join(UPLOAD_FOLDER, filename)
+        file.save(file_path)
+
+        file_url = f"/api/uploads/{filename}"
+        return jsonify({
+            "message": "File uploaded successfully",
+            "filename": file.filename,
+            "saved_filename": filename,
+            "url": file_url,
+            "size": os.path.getsize(file_path),
+        }), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
 
 # ==========================================
 # GET MY WORKING PROJECTS

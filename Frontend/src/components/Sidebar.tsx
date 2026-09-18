@@ -10,6 +10,7 @@ import {
   LogOut,
   X
 } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
 
 interface SidebarProps {
   isOpen: boolean;
@@ -28,48 +29,62 @@ export const Sidebar: React.FC<SidebarProps> = ({
   savedCount = 0,
   onLogoutClick,
 }) => {
+  const { user } = useAuth();
+  const isEditor = user?.role === 'editor';
+  const isCreator = user?.role === 'creator';
+
+  // Base navigation items adjusted by role
   const navItems = [
     {
       id: 'dashboard',
       to: '/',
-      label: 'Dashboard',
+      label: isCreator ? 'Creator Feed' : 'Editor Dashboard',
       icon: LayoutDashboard,
-      tooltip: 'Main overview & project feed',
+      tooltip: isCreator ? 'Overview & Creator portal' : 'Browse live Creator projects',
     },
-    {
-      id: 'content',
-      to: '/content',
-      label: 'Content',
-      icon: FolderPlus,
-      badge: 'Client',
-      badgeColor: 'bg-purple-100 text-purple-700',
-      tooltip: 'Post & create services/projects',
-    },
-    {
-      id: 'my-projects',
-      to: '/projects',
-      label: 'My Projects',
-      icon: Briefcase,
-      badge: '2 Active',
-      badgeColor: 'bg-blue-100 text-blue-700',
-      tooltip: 'Active editor jobs & milestones',
-    },
-    {
-      id: 'saved',
-      to: '/saved',
-      label: 'Saved',
-      icon: Bookmark,
-      count: savedCount,
-      tooltip: 'Bookmarked projects & services',
-    },
-    {
-      id: 'earn',
-      to: '/earn',
-      label: 'Earn',
-      icon: DollarSign,
-      tooltip: 'Freelancer earnings & payouts',
-    },
+    ...(isCreator
+      ? [
+          {
+            id: 'content',
+            to: '/content',
+            label: 'Post Projects',
+            icon: FolderPlus,
+            badge: 'Creator',
+            badgeColor: 'bg-purple-100 text-purple-700',
+            tooltip: 'Post & manage project briefs',
+          },
+        ]
+      : []),
+    ...(isEditor
+      ? [
+          {
+            id: 'my-projects',
+            to: '/projects',
+            label: 'My Projects',
+            icon: Briefcase,
+            badge: 'Active',
+            badgeColor: 'bg-blue-100 text-blue-700',
+            tooltip: 'Active editor jobs & milestones',
+          },
+          {
+            id: 'saved',
+            to: '/saved',
+            label: 'Saved',
+            icon: Bookmark,
+            count: savedCount,
+            tooltip: 'Bookmarked projects',
+          },
+          {
+            id: 'earn',
+            to: '/earn',
+            label: 'Earnings',
+            icon: DollarSign,
+            tooltip: 'Editor earnings & payouts',
+          },
+        ]
+      : []),
   ];
+
 
   return (
     <>
@@ -110,8 +125,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
           >
             <div className="w-[84px] h-[84px] rounded-full overflow-hidden border-[2.5px] border-purple-500/60 p-0.5 shadow-lg bg-[#0F081D] group-hover:border-purple-400 group-hover:shadow-purple-500/30 transition-all flex items-center justify-center">
               <img
-                src="/assets/anivex-avatar.png"
-                alt="Ani Vex"
+                src={user?.avatar || '/assets/anivex-avatar.png'}
+                alt={user?.name || 'User'}
                 className="w-full h-full rounded-full object-cover group-hover:scale-105 transition-transform duration-300"
                 onError={(e) => {
                   (e.currentTarget as HTMLImageElement).src =
@@ -119,13 +134,19 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 }}
               />
             </div>
-            <span className="text-[11px] font-medium text-gray-500 mt-2.5 tracking-tight group-hover:text-gray-700 transition">
-              Your channel
+            <span className="text-[11px] font-medium text-gray-500 mt-2.5 tracking-tight group-hover:text-gray-700 transition flex items-center gap-1.5">
+              <span>{user?.email || 'Logged in'}</span>
             </span>
-            <h2 className="text-[13px] font-bold text-[#0F0F0F] tracking-tight group-hover:text-purple-700 transition">
-              Ani Vex
+            <h2 className="text-[13px] font-bold text-[#0F0F0F] tracking-tight group-hover:text-purple-700 transition flex items-center gap-1.5 mt-0.5">
+              <span>{user?.name || 'User'}</span>
+              {user?.role && (
+                <span className="px-1.5 py-0.2 bg-purple-100 text-purple-700 text-[10px] font-extrabold uppercase rounded">
+                  {user.role}
+                </span>
+              )}
             </h2>
           </Link>
+
 
           {/* Main Navigation Menu */}
           <nav className="px-2 space-y-1">

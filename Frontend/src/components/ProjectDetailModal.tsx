@@ -119,30 +119,75 @@ export const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({
           {/* Description */}
           <div>
             <h4 className="text-xs font-bold text-gray-900 uppercase tracking-wider mb-1.5">
-              Project Overview
+              Requirements & Description
             </h4>
-            <p className="text-xs leading-relaxed text-gray-600">
+            <p className="text-xs leading-relaxed text-gray-600 whitespace-pre-line">
               {project.description ||
-                'This project includes high-fidelity assets, production-ready deliverables, and responsive interactive elements designed according to modern web development standards.'}
+                'This project includes high-fidelity assets, production-ready deliverables, and responsive interactive elements designed according to modern standards.'}
             </p>
           </div>
 
-          {/* Budget & Stats */}
-          <div className="grid grid-cols-2 gap-3 pt-2">
+          {/* Project Files if available */}
+          {project.files && project.files.length > 0 && (
+            <div>
+              <h4 className="text-xs font-bold text-gray-900 uppercase tracking-wider mb-2">
+                Project Files & Briefs
+              </h4>
+              <div className="space-y-1.5">
+                {project.files.map((f: any, idx: number) => {
+                  const fileName = typeof f === 'string' ? f : f.name || `Attachment-${idx + 1}`;
+                  const fileUrl = typeof f === 'string' ? f : f.url || '#';
+                  const isExternal = fileUrl.startsWith('http');
+                  const fullUrl = isExternal ? fileUrl : `http://127.0.0.1:5000${fileUrl}`;
+
+                  return (
+                    <a
+                      key={idx}
+                      href={fullUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="flex items-center justify-between p-2.5 bg-gray-50 hover:bg-purple-50/60 border border-gray-200/70 rounded-xl text-xs font-medium text-gray-800 transition group"
+                    >
+                      <div className="flex items-center gap-2 truncate">
+                        <span className="w-6 h-6 rounded-lg bg-purple-100 text-purple-700 flex items-center justify-center flex-shrink-0">
+                          <ExternalLink className="w-3 h-3" />
+                        </span>
+                        <span className="truncate">{fileName}</span>
+                      </div>
+                      <span className="text-[11px] font-semibold text-purple-600 group-hover:underline flex-shrink-0">
+                        View / Download
+                      </span>
+                    </a>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Budget, Deadline & Stats */}
+          <div className="grid grid-cols-3 gap-3 pt-2">
             <div className="p-3 bg-purple-50/60 border border-purple-100 rounded-xl">
               <span className="text-[11px] text-purple-700 font-medium block">
                 Estimated Budget
               </span>
-              <span className="text-base font-bold text-gray-900 mt-0.5 block">
+              <span className="text-sm sm:text-base font-bold text-gray-900 mt-0.5 block truncate">
                 {project.budget}
+              </span>
+            </div>
+            <div className="p-3 bg-amber-50/60 border border-amber-100 rounded-xl">
+              <span className="text-[11px] text-amber-700 font-medium block">
+                Deadline
+              </span>
+              <span className="text-sm sm:text-base font-bold text-amber-900 mt-0.5 block truncate">
+                {project.deadline || 'Flexible'}
               </span>
             </div>
             <div className="p-3 bg-emerald-50/60 border border-emerald-100 rounded-xl">
               <span className="text-[11px] text-emerald-700 font-medium block">
-                Deliverables Status
+                Status
               </span>
-              <span className="text-base font-bold text-emerald-800 mt-0.5 block">
-                Open for Bids
+              <span className="text-sm sm:text-base font-bold text-emerald-800 mt-0.5 block uppercase">
+                {project.status || 'Open'}
               </span>
             </div>
           </div>

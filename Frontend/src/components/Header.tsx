@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Menu, Search, HelpCircle, Bell, Plus, Sparkles, X } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
 
 interface HeaderProps {
   onToggleSidebar: () => void;
@@ -17,6 +18,9 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenCreateModal,
   onOpenAskEditor,
 }) => {
+  const { user } = useAuth();
+  const isEditor = user?.role === 'editor';
+
   return (
     <header className="sticky top-0 z-40 h-14 bg-white border-b border-[#EAEAEA] flex items-center justify-between px-4 sm:px-6 select-none">
       {/* Left section: Hamburger + Brand */}
@@ -100,24 +104,40 @@ export const Header: React.FC<HeaderProps> = ({
           <span>Ask Editor</span>
         </button>
 
-        {/* + Create Button */}
-        <button
-          onClick={onOpenCreateModal}
-          className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold bg-white hover:bg-gray-50 text-[#0F0F0F] border border-gray-300 transition-all shadow-sm active:scale-95"
-        >
-          <Plus className="w-4 h-4 text-gray-700 stroke-[2.5]" />
-          <span>Create</span>
-        </button>
+        {/* + Create Button (Only for Creators, hidden for Editors) */}
+        {!isEditor && (
+          <button
+            onClick={onOpenCreateModal}
+            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold bg-white hover:bg-gray-50 text-[#0F0F0F] border border-gray-300 transition-all shadow-sm active:scale-95 cursor-pointer"
+            title="Create and publish a new project to MongoDB"
+          >
+            <Plus className="w-4 h-4 text-gray-700 stroke-[2.5]" />
+            <span>Create</span>
+          </button>
+        )}
+
+        {/* Role Badge */}
+        {user?.role && (
+          <span
+            className={`hidden sm:inline-block px-2.5 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wider ${
+              user.role === 'creator'
+                ? 'bg-purple-100 text-purple-700 border border-purple-200'
+                : 'bg-emerald-100 text-emerald-700 border border-emerald-200'
+            }`}
+          >
+            {user.role}
+          </span>
+        )}
 
         {/* Profile Avatar */}
         <Link
           to="/settings"
           className="w-8 h-8 rounded-full overflow-hidden border border-purple-400/50 cursor-pointer ml-1 hover:ring-2 hover:ring-purple-400 transition-all flex-shrink-0 bg-[#0F081D]"
-          title="Ani Vex Channel - Settings"
+          title={`${user?.name || user?.email || 'User'} (${user?.role || 'Guest'}) - Settings`}
         >
           <img
-            src="/assets/anivex-avatar.png"
-            alt="Ani Vex"
+            src={user?.avatar || '/assets/anivex-avatar.png'}
+            alt={user?.name || 'User'}
             className="w-full h-full object-cover"
             onError={(e) => {
               (e.currentTarget as HTMLImageElement).src =
@@ -129,3 +149,4 @@ export const Header: React.FC<HeaderProps> = ({
     </header>
   );
 };
+

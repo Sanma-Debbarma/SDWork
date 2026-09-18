@@ -41,8 +41,12 @@ export interface Project {
   experienceLevel?: 'Entry' | 'Intermediate' | 'Expert';
   description?: string;
   featured?: boolean;
-  status?: 'open' | 'in_production' | 'completed';  // NEW
-  proposals?: number;                                 // NEW
+  status?: 'open' | 'in_production' | 'completed';
+  proposals?: number;
+  deadline?: string;
+  files?: Array<{ name: string; url: string }>;
+  creator_id?: string;
+  created_at?: string;
 }
 
 export type SortOption = 'newest' | 'likes' | 'budget_high' | 'budget_low';
